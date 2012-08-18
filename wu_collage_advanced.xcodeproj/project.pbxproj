@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		94EAB50415DDEE56000B5D4C /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 94EAB50315DDEE56000B5D4C /* main.cpp */; };
 		94EAB50615DDEE56000B5D4C /* wu_collage_advanced.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 94EAB50515DDEE56000B5D4C /* wu_collage_advanced.1 */; };
+		94EEB39F15DF595300135247 /* wu_collage_advanced.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 94EEB39D15DF595300135247 /* wu_collage_advanced.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -28,6 +29,8 @@
 		94EAB4FF15DDEE56000B5D4C /* wu_collage_advanced */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = wu_collage_advanced; sourceTree = BUILT_PRODUCTS_DIR; };
 		94EAB50315DDEE56000B5D4C /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		94EAB50515DDEE56000B5D4C /* wu_collage_advanced.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = wu_collage_advanced.1; sourceTree = "<group>"; };
+		94EEB39D15DF595300135247 /* wu_collage_advanced.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = wu_collage_advanced.cpp; sourceTree = "<group>"; };
+		94EEB39E15DF595300135247 /* wu_collage_advanced.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = wu_collage_advanced.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -62,6 +65,8 @@
 			children = (
 				94EAB50315DDEE56000B5D4C /* main.cpp */,
 				94EAB50515DDEE56000B5D4C /* wu_collage_advanced.1 */,
+				94EEB39D15DF595300135247 /* wu_collage_advanced.cpp */,
+				94EEB39E15DF595300135247 /* wu_collage_advanced.h */,
 			);
 			path = wu_collage_advanced;
 			sourceTree = "<group>";
@@ -118,6 +123,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				94EAB50415DDEE56000B5D4C /* main.cpp in Sources */,
+				94EEB39F15DF595300135247 /* wu_collage_advanced.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -222,6 +228,7 @@
 				94EAB50B15DDEE56000B5D4C /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
