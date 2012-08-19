@@ -15,6 +15,22 @@
 #include <vector>
 #include <time.h>
 #define random(x) (rand() % x)
+#define MAX_ITER_NUM 100       // Max number of aspect ratio adjustment.
+#define MAX_TREE_GENE_NUM 100  // Max number of tree re-generation.
+
+class FloatRect {
+public:
+  FloatRect () {
+    x_ = 0;
+    y_ = 0;
+    width_ = 0;
+    height_ = 0;
+  }
+  float x_;
+  float y_;
+  float width_;
+  float height_;
+};
 
 class TreeNode {
 public:
@@ -24,7 +40,7 @@ public:
     is_leaf_ = true;
     alpha_ = 0;
     alpha_expect_ = 0;
-    position_ = cv::Rect(0, 0, 0, 0);
+    position_ = FloatRect();
     image_index_ = -1;
     left_child_ = NULL;
     right_child_ = NULL;
@@ -36,7 +52,7 @@ public:
   bool is_leaf_;         // Is this node a leaf node or a inner node.
   float alpha_expect_;   // If this node is a leaf, we set expected aspect ratio of this node.
   float alpha_;          // If this node is a leaf, we set actual aspect ratio of this node.
-  cv::Rect position_;    // The position of the node on canvas.
+  FloatRect position_;    // The position of the node on canvas.
   int image_index_;      // If this node is a leaf, it is related with a image.
   TreeNode* left_child_;
   TreeNode* right_child_;
@@ -65,6 +81,7 @@ public:
     canvas_width_ = -1;
     image_num_ = static_cast<int>(image_vec_.size());
     srand(static_cast<unsigned>(time(0)));
+    tree_root_ = new TreeNode();
   }
   ~CollageAdvanced() {
     ReleaseTree(tree_root_);
@@ -85,8 +102,8 @@ public:
   // [1 / 2, 1 * 2] = [0.5, 2].
   // We also define MAX_ITER_NUM = 100,
   // If max iteration number is reached and we cannot find a good result aspect ratio,
-  // this function returns false.
-  bool CreateCollage(float expect_alpha, float thresh = 1.2);
+  // this function returns -1.
+  int CreateCollage(float expect_alpha, float thresh);
   
   // Output collage into a single image.
   cv::Mat OutputCollageImage() const;
@@ -119,11 +136,35 @@ private:
   // Guided binary tree generation.
   void GenerateTree(float expect_alpha);
   // Divide-and-conquer tree generation.
-  TreeNode* GuidedTree(TreeNode* parent,ß
+  TreeNode* GuidedTree(TreeNode* parent,
                        char child_type,
                        float expect_alpha,
                        int image_num,
-                       std::vector<AlphaUnit> alpha_array);
+                       std::vector<AlphaUnit>& alpha_array);
+  // Find the best-match aspect ratio image in the given array.
+  // alpha_array is the array storing aspect ratios.
+  // find_img_ind is the best-match image index according to image_vec_.
+  // find_img_alpha is the best-match alpha value.
+  // After finding the best-match one, the AlphaUnit is removed from alpha_array,
+  // which means that we have dispatched one image with a tree leaf.
+  bool FindOneImage(float expect_alpha,
+                    std::vector<AlphaUnit>& alpha_array,
+                    int& find_img_ind,
+                    float& find_img_alpha);
+  // Find the best fit aspect ratio (two images) in the given array.
+  // find_split_type returns 'h' or 'v'.
+  // If it is 'h', the parent node is horizontally split, and 'v' for vertically
+  // split. After finding the two images, the corresponding AlphaUnits are
+  // removed, which means we have dispatched two images.
+  bool FindTwoImages(float expect_alpha,
+                     std::vector<AlphaUnit>& alpha_array,
+                     char& find_split_type,
+                     int& find_img_ind_1,
+                     float& find_img_alpha_1,
+                     int& find_img_ind_2,
+                     float& find_img_alpha_2);
+  // Top-down adjust aspect ratio for the final collage.
+  void AdjustAlpha(TreeNode* node, float thresh);
   
   // Vector containing input image paths.
   std::vector<std::string> image_path_vec_;

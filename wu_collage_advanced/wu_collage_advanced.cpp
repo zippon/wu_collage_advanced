@@ -27,10 +27,10 @@ bool CollageAdvanced::CreateCollage(float expect_alpha) {
   canvas_alpha_ = CalculateAlpha(tree_root_);
   canvas_width_ = static_cast<int>(canvas_height_ * canvas_alpha_);
   // Step 4: Get the position for the nodes in the binary tree.
-  tree_root_->position_.x = 0;
-  tree_root_->position_.y = 0;
-  tree_root_->position_.height = canvas_height_;
-  tree_root_->position_.width = canvas_width_;
+  tree_root_->position_.x_ = 0;
+  tree_root_->position_.y_ = 0;
+  tree_root_->position_.height_ = canvas_height_;
+  tree_root_->position_.width_ = canvas_width_;
   CalculatePositions(tree_root_->left_child_);
   CalculatePositions(tree_root_->right_child_);
   return true;
@@ -45,9 +45,65 @@ bool CollageAdvanced::CreateCollage(float expect_alpha) {
 // [1 / 2, 1 * 2] = [0.5, 2].
 // We also define MAX_ITER_NUM = 100,
 // If max iteration number is reached and we cannot find a good result aspect ratio,
-// this function returns false.
-bool CollageAdvanced::CreateCollage(float expect_alpha, float thresh) {
-};
+// this function returns -1.
+int CollageAdvanced::CreateCollage(float expect_alpha, float thresh) {
+  assert(thresh > 1);
+  assert(expect_alpha > 0);
+  tree_root_->alpha_expect_ = expect_alpha;
+  float lower_bound = expect_alpha / thresh;
+  float upper_bound = expect_alpha * thresh;
+  int total_iter_counter = 1;
+  int iter_counter = 1;
+  int tree_gene_counter = 1;
+  // Step 1: Sort the image_alpha_ vector fot generate guided binary tree.
+  std::sort(image_alpha_vec_.begin(), image_alpha_vec_.end(), less_than);
+  // Step 2: Generate a guided binary tree by using divide-and-conquer.
+  GenerateTree(expect_alpha);
+  // Step 3: Calculate the actual aspect ratio for the generated collage.
+  canvas_alpha_ = CalculateAlpha(tree_root_);
+  
+  while ((canvas_alpha_ < lower_bound) || (canvas_alpha_ > upper_bound)) {
+    // Call the following function to adjust the aspect ratio from top to down.
+    tree_root_->alpha_expect_ = expect_alpha;
+    AdjustAlpha(tree_root_, thresh);
+    // Calculate actual aspect ratio again.
+    canvas_alpha_ = CalculateAlpha(tree_root_);
+    ++iter_counter;
+    ++total_iter_counter;
+    if (iter_counter > MAX_ITER_NUM) {
+      std::cout << "*******************************" << std::endl;
+      std::cout << "max iteration number reached..." << std::endl;
+      std::cout << "*******************************" << std::endl << std::endl;
+      // We should generate binary tree again
+      iter_counter = 1;
+      ++total_iter_counter;
+      GenerateTree(expect_alpha);
+      canvas_alpha_ = CalculateAlpha(tree_root_);
+      ++tree_gene_counter;
+      if (tree_gene_counter > MAX_TREE_GENE_NUM) {
+        std::cout << "-------------------------------------------------------";
+        std::cout << std::endl;
+        std::cout << "WE HAVE DONE OUR BEST, BUT COLAAGE GENERATION FAILED...";
+        std::cout << std::endl;
+        std::cout << "-------------------------------------------------------";
+        std::cout << std::endl;
+        return -1;
+      }
+    }
+  }
+  // std::cout << "Canvas generation success!" << std::endl;
+  std::cout << "Tree generation number is: " << tree_gene_counter << std::endl;
+  std::cout << "Total iteration number is: " << total_iter_counter << std::endl;
+  // After adjustment, set the position for all the tile images.
+  canvas_width_ = static_cast<int>(canvas_height_ * canvas_alpha_);
+  tree_root_->position_.x_ = 0;
+  tree_root_->position_.y_ = 0;
+  tree_root_->position_.height_ = canvas_height_;
+  tree_root_->position_.width_ = canvas_width_;
+  CalculatePositions(tree_root_->left_child_);
+  CalculatePositions(tree_root_->right_child_);
+  return total_iter_counter;
+}
 
 // After calling CreateCollage() and FastAdjust(), call this function to save result
 // collage to a image file specified by out_put_image_path.
@@ -58,10 +114,11 @@ cv::Mat CollageAdvanced::OutputCollageImage() const {
   cv::Mat canvas(cv::Size(canvas_width_, canvas_height_), image_vec_[0].type());
   for (int i = 0; i < image_num_; ++i) {
     int img_ind = tree_leaves_[i]->image_index_;
-    cv::Rect pos = tree_leaves_[i]->position_;
-    cv::Mat roi(canvas, pos);
+    FloatRect pos = tree_leaves_[i]->position_;
+    cv::Rect pos_cv(pos.x_, pos.y_, pos.width_, pos.height_);
+    cv::Mat roi(canvas, pos_cv);
     assert(image_vec_[0].type() == image_vec_[img_ind].type());
-    cv::Mat resized_img(pos.height, pos.width, image_vec_[i].type());
+    cv::Mat resized_img(pos_cv.height, pos_cv.width, image_vec_[i].type());
     cv::resize(image_vec_[img_ind], resized_img, resized_img.size());
     resized_img.copyTo(roi);
   }
@@ -94,13 +151,13 @@ bool CollageAdvanced::OutputCollageHtml(const std::string output_html_path) {
     output_html << "\t\t\t\t<img src=\"";
     output_html << image_path_vec_[img_ind];
     output_html << "\" style=\"position:absolute; width:";
-    output_html << tree_leaves_[i]->position_.width;
+    output_html << tree_leaves_[i]->position_.width_;
     output_html << "px; height:";
-    output_html << tree_leaves_[i]->position_.height;
+    output_html << tree_leaves_[i]->position_.height_;
     output_html << "px; left:";
-    output_html << tree_leaves_[i]->position_.x;
+    output_html << tree_leaves_[i]->position_.x_;
     output_html << "px; top:";
-    output_html << tree_leaves_[i]->position_.y;
+    output_html << tree_leaves_[i]->position_.y_;
     output_html << "px;\">\n";
     output_html << "\t\t\t</a>\n";
   }
@@ -167,26 +224,24 @@ bool CollageAdvanced::CalculatePositions(TreeNode* node) {
   // Step 1: calculate height & width.
   if (node->parent_->split_type_ == 'v') {
     // Vertical cut, height unchanged.
-    node->position_.height = node->parent_->position_.height;
+    node->position_.height_ = node->parent_->position_.height_;
     if (node->child_type_ == 'l') {
-      node->position_.width = static_cast<int>
-      (node->position_.height * node->alpha_);
+      node->position_.width_ = node->position_.height_ * node->alpha_;
     } else if (node->child_type_ == 'r') {
-      node->position_.width = node->parent_->position_.width -
-      node->parent_->left_child_->position_.width;
+      node->position_.width_ = node->parent_->position_.width_ -
+      node->parent_->left_child_->position_.width_;
     } else {
       std::cout << "Error: CalculatePositions step 0" << std::endl;
       return false;
     }
   } else if (node->parent_->split_type_ == 'h') {
     // Horizontal cut, width unchanged.
-    node->position_.width = node->parent_->position_.width;
+    node->position_.width_ = node->parent_->position_.width_;
     if (node->child_type_ == 'l') {
-      node->position_.height = static_cast<int>
-      (node->position_.width / node->alpha_);
+      node->position_.height_ = node->position_.width_ / node->alpha_;
     } else if (node->child_type_ == 'r') {
-      node->position_.height = node->parent_->position_.height -
-      node->parent_->left_child_->position_.height;
+      node->position_.height_ = node->parent_->position_.height_ -
+      node->parent_->left_child_->position_.height_;
     }
   } else {
     std::cout << "Error: CalculatePositions step 1" << std::endl;
@@ -196,21 +251,21 @@ bool CollageAdvanced::CalculatePositions(TreeNode* node) {
   // Step 2: calculate x & y.
   if (node->child_type_ == 'l') {
     // If it is left child, use its parent's x & y.
-    node->position_.x = node->parent_->position_.x;
-    node->position_.y = node->parent_->position_.y;
+    node->position_.x_ = node->parent_->position_.x_;
+    node->position_.y_ = node->parent_->position_.y_;
   } else if (node->child_type_ == 'r') {
     if (node->parent_->split_type_ == 'v') {
       // y (row) unchanged, x (colmn) changed.
-      node->position_.y = node->parent_->position_.y;
-      node->position_.x = node->parent_->position_.x +
-      node->parent_->position_.width -
-      node->position_.width;
+      node->position_.y_ = node->parent_->position_.y_;
+      node->position_.x_ = node->parent_->position_.x_ +
+      node->parent_->position_.width_ -
+      node->position_.width_;
     } else if (node->parent_->split_type_ == 'h') {
       // x (column) unchanged, y (row) changed.
-      node->position_.x = node->parent_->position_.x;
-      node->position_.y = node->parent_->position_.y +
-      node->parent_->position_.height -
-      node->position_.height;
+      node->position_.x_ = node->parent_->position_.x_;
+      node->position_.y_ = node->parent_->position_.y_ +
+      node->parent_->position_.height_ -
+      node->position_.height_;
     } else {
       std::cout << "Error: CalculatePositions step 2 - 1" << std::endl;
     }
@@ -260,10 +315,10 @@ void CollageAdvanced::GenerateTree(float expect_alpha) {
 TreeNode* CollageAdvanced::GuidedTree(TreeNode* parent,
                                       char child_type,
                                       float expect_alpha,
-                                      int image_num,
-                                      std::vector<AlphaUnit> alpha_array) {
+                                      int img_num,
+                                      std::vector<AlphaUnit>& alpha_array) {
   if (alpha_array.size() == 0) {
-    std::cout << "Error: GuidedTree" << std::endl;
+    std::cout << "Error: GuidedTree 0" << std::endl;
     return NULL;
   }
   
@@ -272,43 +327,54 @@ TreeNode* CollageAdvanced::GuidedTree(TreeNode* parent,
   node->parent_ = parent;
   node->child_type_ = child_type;
   
-  if (image_num == 1) {
+  if (img_num == 1) {
     // Set the new node.
     node->is_leaf_ = true;
     // Find the best fit aspect ratio.
-    
-    // Since this node is a leaf node, we have to set the followings.
-    node->alpha_ =
-    node->image_index_ = 
-  } else if (image_num == 2) {
+    bool success = FindOneImage(expect_alpha,
+                                alpha_array,
+                                node->image_index_,
+                                node->alpha_);
+    if (!success) {
+      std::cout << "Error: GuidedTree 1" << std::endl;
+      return NULL;
+    }
+    tree_leaves_.push_back(node);
+  } else if (img_num == 2) {
     // Set the new node.
     node->is_leaf_ = false;
-    
-    // Find the best fit aspect ratio with two nodes.
-    // As well as the split type for node.
-    
-    node->split_type_ =
-    
-    TreeNode* l_child new TreeNode();
-    l_child.child_type_ = 'l';
-    l_chil.parent_ = node;
-    l_child.alpha_ =
-    l_child.is_leaf_ = true;
-    l_child->image_index_ =
+    TreeNode* l_child = new TreeNode();
+    l_child->child_type_ = 'l';
+    l_child->parent_ = node;
+    l_child->is_leaf_ = true;
     node->left_child_ = l_child;
     
     TreeNode* r_child = new TreeNode();
-    r_child.child_type_ = 'r';
-    r_chil.parent_ = node;
-    r_child.alpha_ =
-    r_child.is_leaf_ = true;
-    r_child->image_index_ =
+    r_child->child_type_ = 'r';
+    r_child->parent_ = node;
+    r_child->is_leaf_ = true;
     node->right_child_ = r_child;
+    // Find the best fit aspect ratio with two nodes.
+    // As well as the split type for node.
+    bool success = FindTwoImages(expect_alpha, alpha_array,
+                                 node->split_type_,
+                                 l_child->image_index_,
+                                 l_child->alpha_,
+                                 r_child->image_index_,
+                                 r_child->alpha_);
+    if (!success) {
+      std::cout << "Error: GuidedTree 2" << std::endl;
+      return NULL;
+    }
+    tree_leaves_.push_back(l_child);
+    tree_leaves_.push_back(r_child);
   } else {
     node->is_leaf_ = false;
     float new_exp_alpha = 0;
     // Random split type.
     int v_h = random(2);
+    if (expect_alpha > 10) v_h = 1;
+    if (expect_alpha < 0.1) v_h = 0;
     if (v_h == 1) {
       node->split_type_ = 'v';
       new_exp_alpha = expect_alpha / 2;
@@ -316,8 +382,8 @@ TreeNode* CollageAdvanced::GuidedTree(TreeNode* parent,
       node->split_type_ = 'h';
       new_exp_alpha = expect_alpha * 2;
     }
-    int new_img_num_1 = static_cast<int>(image_num / 2);
-    int new_img_num_2 = image_num - new_img_num_1;
+    int new_img_num_1 = static_cast<int>(img_num / 2);
+    int new_img_num_2 = img_num - new_img_num_1;
     if (new_img_num_1 > 0) {
       TreeNode* l_child = new TreeNode();
       l_child = GuidedTree(node, 'l', new_exp_alpha, new_img_num_1, alpha_array);
@@ -330,5 +396,220 @@ TreeNode* CollageAdvanced::GuidedTree(TreeNode* parent,
     }
   }
   return node;
+}
+
+// Find the best-match aspect ratio image in the given array.
+// alpha_array is the array storing aspect ratios.
+// find_img_ind is the best-match image index according to image_vec_.
+// find_img_alpha is the best-match alpha value.
+// After finding the best-match one, the AlphaUnit is removed from alpha_array,
+// which means that we have dispatched one image with a tree leaf.
+bool CollageAdvanced::FindOneImage(float expect_alpha,
+                                   std::vector<AlphaUnit>& alpha_array,
+                                   int& find_img_ind,
+                                   float& find_img_alpha) {
+  if (alpha_array.size() == 0) return false;
+  // Since alpha_array has already been sorted, we use binary search to find
+  // the best-match result.
+  int finder = -1;
+  int min_ind = 0;
+  int mid_ind = -1;
+  int max_ind = static_cast<int>(alpha_array.size()) - 1;
+  while (min_ind + 1 < max_ind) {
+    mid_ind = (min_ind + max_ind) / 2;
+    if (alpha_array[mid_ind].alpha_ == expect_alpha) {
+      finder = mid_ind;
+      break;
+    } else if (alpha_array[mid_ind].alpha_ > expect_alpha) {
+      max_ind = mid_ind - 1;
+    } else {
+      min_ind = mid_ind + 1;
+    }
+  }
+  if (finder == -1) {
+    if (fabs(alpha_array[max_ind].alpha_ - expect_alpha) >
+        fabs(alpha_array[min_ind].alpha_ - expect_alpha)) finder = min_ind;
+    else finder = max_ind;
+  }
   
+  // Dispatch image to leaf node.
+  find_img_alpha = alpha_array[finder].alpha_;
+  find_img_ind = alpha_array[finder].image_ind_;
+  // Remove the find result from alpha_array.
+//  std::cout<< alpha_array[finder].image_ind_ << std::endl;
+  alpha_array.erase(alpha_array.begin() + finder);
+  return true;
+}
+
+// Find the best fit aspect ratio (two images) in the given array.
+// find_split_type returns 'h' or 'v'.
+// If it is 'h', the parent node is horizontally split, and 'v' for vertically
+// split. After finding the two images, the corresponding AlphaUnits are
+// removed, which means we have dispatched two images.
+bool CollageAdvanced::FindTwoImages(float expect_alpha,
+                                    std::vector<AlphaUnit>& alpha_array,
+                                    char& find_split_type,
+                                    int& find_img_ind_1,
+                                    float& find_img_alpha_1,
+                                    int& find_img_ind_2,
+                                    float& find_img_alpha_2) {
+  if ((alpha_array.size() == 0) || (alpha_array.size() == 1)) return false;
+  // There are two situations:
+  // [1]: parent node is vertival cut.
+  int i = 0;
+  int j = static_cast<int>(alpha_array.size()) - 1;
+  int best_v_i = i;
+  int best_v_j = j;
+  float min_v_diff = fabs(alpha_array[best_v_i].alpha_ +
+                         alpha_array[best_v_j].alpha_ -
+                         expect_alpha);
+  while (i < j) {
+    if (alpha_array[i].alpha_ + alpha_array[j].alpha_ > expect_alpha) {
+      float diff = fabs(alpha_array[i].alpha_ +
+                       alpha_array[j].alpha_ -
+                       expect_alpha);
+      if (diff < min_v_diff) {
+        min_v_diff = diff;
+        best_v_i = i;
+        best_v_j = j;
+      }
+      --j;
+    } else if (alpha_array[i].alpha_ + alpha_array[j].alpha_ < expect_alpha) {
+      float diff = fabs(alpha_array[i].alpha_ +
+                       alpha_array[j].alpha_ -
+                       expect_alpha);
+      if (diff < min_v_diff) {
+        min_v_diff = diff;
+        best_v_i = i;
+        best_v_j = j;
+      }
+      ++i;
+    } else {
+      best_v_i = i;
+      best_v_j = j;
+      min_v_diff = 0;
+      break;
+    }
+  }
+  // [2]: parent node is horizontal cut;
+  float expect_alpha_recip = 1 / expect_alpha;
+  i = 0;
+  j = static_cast<int>(alpha_array.size()) - 1;
+  int best_h_i = i;
+  int best_h_j = j;
+  float min_h_diff = fabs(alpha_array[best_h_i].alpha_recip_ +
+                         alpha_array[best_h_j].alpha_recip_ -
+                         expect_alpha_recip);
+  while (i < j) {
+    if (alpha_array[i].alpha_recip_ + alpha_array[j].alpha_recip_ >
+        expect_alpha_recip) {
+      float diff = fabs(alpha_array[i].alpha_recip_ +
+                       alpha_array[j].alpha_recip_ -
+                       expect_alpha_recip);
+      if (diff < min_h_diff) {
+        min_h_diff = diff;
+        best_h_i = i;
+        best_h_j = j;
+      }
+      ++i;
+    } else if (alpha_array[i].alpha_recip_  + alpha_array[j].alpha_recip_ <
+        expect_alpha_recip) {
+      float diff = fabs(alpha_array[i].alpha_recip_ +
+                        alpha_array[j].alpha_recip_ -
+                        expect_alpha_recip);
+      if (diff < min_h_diff) {
+        min_h_diff = diff;
+        best_h_i = i;
+        best_h_j = j;
+      }
+      --j;
+    } else {
+      best_h_i = i;
+      best_h_j = j;
+      min_h_diff = 0;
+      break;
+    }
+  }
+  
+  // Find the best-match from the above two situations.
+  float real_alpha_v = alpha_array[best_v_i].alpha_ + alpha_array[best_v_j].alpha_;
+  float real_alpha_h = (alpha_array[best_h_i].alpha_ * alpha_array[best_h_j].alpha_) /
+  (alpha_array[best_h_i].alpha_ + alpha_array[best_h_j].alpha_);
+  
+  float ratio_diff_v = -1;
+  float ratio_diff_h = -1;
+  if (real_alpha_v > expect_alpha) {
+    ratio_diff_v = real_alpha_v / expect_alpha;
+  } else {
+    ratio_diff_v = expect_alpha / real_alpha_v;
+  }
+  if (real_alpha_h > expect_alpha) {
+    ratio_diff_h = real_alpha_h / expect_alpha;
+  } else {
+    ratio_diff_h = expect_alpha / real_alpha_h;
+  }
+
+  assert(best_h_i < best_h_j);
+  assert(best_v_i < best_v_j);
+  
+  if (ratio_diff_v <= ratio_diff_h) {
+    find_split_type = 'v';
+    find_img_ind_1 = alpha_array[best_v_i].image_ind_;
+    find_img_ind_2 = alpha_array[best_v_j].image_ind_;
+    find_img_alpha_1 = alpha_array[best_v_i].alpha_;
+    find_img_alpha_2 = alpha_array[best_v_j].alpha_;
+    
+//    std::cout << alpha_array[best_v_i].image_ind_
+//    << ":" << alpha_array[best_v_j].image_ind_ << std::endl;
+    
+    alpha_array.erase(alpha_array.begin() + best_v_j);
+    alpha_array.erase(alpha_array.begin() + best_v_i);
+  } else {
+    find_split_type = 'h';
+    find_img_ind_1 = alpha_array[best_h_i].image_ind_;
+    find_img_ind_2 = alpha_array[best_h_j].image_ind_;
+    find_img_alpha_1 = alpha_array[best_h_i].alpha_;
+    find_img_alpha_2 = alpha_array[best_h_j].alpha_;
+    
+//    std::cout << alpha_array[best_h_i].image_ind_
+//    << ":" << alpha_array[best_h_j].image_ind_ << std::endl;
+    
+    alpha_array.erase(alpha_array.begin() + best_h_j);
+    alpha_array.erase(alpha_array.begin() + best_h_i);
+  }
+  return true;
+}
+
+void CollageAdvanced::AdjustAlpha(TreeNode *node, float thresh) {
+  assert(thresh > 1);
+  if (node->is_leaf_) return;
+  if (node == NULL) return;
+  
+  float thresh_2 = 1 + (thresh - 1) / 2;
+  
+  if (node->alpha_ > node->alpha_expect_ * thresh_2) {
+    // Too big actual aspect ratio.
+    node->split_type_ = 'h';
+    node->left_child_->alpha_expect_ = node->alpha_expect_ * 2;
+    node->right_child_->alpha_expect_ = node->alpha_expect_ * 2;
+  } else if (node->alpha_ < node->alpha_expect_ / thresh_2 ) {
+    // Too small actual aspect ratio.
+    node->split_type_ = 'v';
+    node->left_child_->alpha_expect_ = node->alpha_expect_ / 2;
+    node->right_child_->alpha_expect_ = node->alpha_expect_ / 2;
+  } else {
+    // Aspect ratio is okay.
+    if (node->split_type_ == 'h') {
+      node->left_child_->alpha_expect_ = node->alpha_expect_ * 2;
+      node->right_child_->alpha_expect_ = node->alpha_expect_ * 2;
+    } else if (node->split_type_ == 'v') {
+      node->left_child_->alpha_expect_ = node->alpha_expect_ * 2;
+      node->right_child_->alpha_expect_ = node->alpha_expect_ * 2;
+    } else {
+      std::cout << "Error: AdjustAlpha" << std::endl;
+      return;
+    }
+  }
+  AdjustAlpha(node->left_child_, thresh);
+  AdjustAlpha(node->right_child_, thresh);
 }
