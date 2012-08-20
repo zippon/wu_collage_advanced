@@ -45,6 +45,7 @@ public:
     left_child_ = NULL;
     right_child_ = NULL;
     parent_ = NULL;
+    img_path_ = "";
   }
   char child_type_;      // Is this node left child "l" or right child "r".
   char split_type_;      // If this node is a inner node, we set 'v' or 'h', which indicate
@@ -57,14 +58,16 @@ public:
   TreeNode* left_child_;
   TreeNode* right_child_;
   TreeNode* parent_;
+  std::string img_path_;
 };
 
 
 class AlphaUnit {
 public:
-  int image_ind_;        // The related image index.
-  float alpha_;          // Aspect ratio value.
-  float alpha_recip_;    // Reciprocal sapect ratio value.
+  int image_ind_;          // The related image index.
+  float alpha_;            // Aspect ratio value.
+  float alpha_recip_;      // Reciprocal sapect ratio value.
+  std::string image_path_; // The related image path.
 };
 
 // Collage with pre-defined aspect ratio
@@ -79,14 +82,13 @@ public:
     canvas_height_ = canvas_height;
     canvas_alpha_ = -1;
     canvas_width_ = -1;
-    image_num_ = static_cast<int>(image_vec_.size());
+    image_num_ = static_cast<int>(image_path_vec_.size());
     srand(static_cast<unsigned>(time(0)));
     tree_root_ = new TreeNode();
   }
-  CollageAdvanced(std::vector<std::string> input_image_list, int canvas_height);
+  CollageAdvanced(const std::vector<std::string> input_image_list, int canvas_height);
   ~CollageAdvanced() {
     ReleaseTree(tree_root_);
-    image_vec_.clear();
     image_alpha_vec_.clear();
     image_path_vec_.clear();
   }
@@ -128,7 +130,8 @@ public:
 private:
   // Read input images from image list.
   bool ReadImageList(std::string input_image_list);
-  // Generate an initial full balanced binary tree with image_num_ leaf nodes.
+  // Recursively calculate aspect ratio for all the inner nodes.
+  // The return value is the aspect ratio for the node.
   float CalculateAlpha(TreeNode* node);
   // Top-down Calculate the image positions in the colage.
   bool CalculatePositions(TreeNode* node);
@@ -152,7 +155,8 @@ private:
   bool FindOneImage(float expect_alpha,
                     std::vector<AlphaUnit>& alpha_array,
                     int& find_img_ind,
-                    float& find_img_alpha);
+                    float& find_img_alpha,
+                    std::string& find_img_path);
   // Find the best fit aspect ratio (two images) in the given array.
   // find_split_type returns 'h' or 'v'.
   // If it is 'h', the parent node is horizontally split, and 'v' for vertically
@@ -163,15 +167,15 @@ private:
                      char& find_split_type,
                      int& find_img_ind_1,
                      float& find_img_alpha_1,
+                     std::string& find_img_path_1,
                      int& find_img_ind_2,
-                     float& find_img_alpha_2);
+                     float& find_img_alpha_2,
+                     std::string& find_img_path_2);
   // Top-down adjust aspect ratio for the final collage.
   void AdjustAlpha(TreeNode* node, float thresh);
   
   // Vector containing input image paths.
   std::vector<std::string> image_path_vec_;
-  // Vector containing input images.
-  std::vector<cv::Mat> image_vec_;
   // Vector containing input images' aspect ratios.
   std::vector<AlphaUnit> image_alpha_vec_;
   // Vector containing leaf nodes of the tree.

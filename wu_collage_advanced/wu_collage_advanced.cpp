@@ -20,11 +20,11 @@ CollageAdvanced::CollageAdvanced(std::vector<std::string> input_image_list,
   for (int i = 0; i < input_image_list.size(); ++i) {
     std::string img_path = input_image_list[i];
     cv::Mat img = cv::imread(img_path.c_str());
-    image_vec_.push_back(img);
     AlphaUnit new_unit;
     new_unit.image_ind_ = i;
     new_unit.alpha_ = static_cast<float>(img.cols) / img.rows;
     new_unit.alpha_recip_ = static_cast<float>(img.rows) / img.cols;
+    new_unit.image_path_ = img_path;
     image_alpha_vec_.push_back(new_unit);
     image_path_vec_.push_back(img_path);
   }
@@ -136,15 +136,19 @@ cv::Mat CollageAdvanced::OutputCollageImage() const {
   // Traverse tree_leaves_ vector. Resize tile image and paste it on the canvas.
   assert(canvas_alpha_ != -1);
   assert(canvas_width_ != -1);
-  cv::Mat canvas(cv::Size(canvas_width_, canvas_height_), image_vec_[0].type());
+  cv::Mat canvas(cv::Size(canvas_width_, canvas_height_),
+                 CV_8UC3,
+                 cv::Scalar(0, 0, 0));
   for (int i = 0; i < image_num_; ++i) {
-    int img_ind = tree_leaves_[i]->image_index_;
+//    cv::imshow("", canvas);
+//    cv::waitKey();
     FloatRect pos = tree_leaves_[i]->position_;
     cv::Rect pos_cv(pos.x_, pos.y_, pos.width_, pos.height_);
     cv::Mat roi(canvas, pos_cv);
-    assert(image_vec_[0].type() == image_vec_[img_ind].type());
-    cv::Mat resized_img(pos_cv.height, pos_cv.width, image_vec_[i].type());
-    cv::resize(image_vec_[img_ind], resized_img, resized_img.size());
+    cv::Mat resized_img(pos_cv.height, pos_cv.width, CV_8UC3);
+    cv::Mat image = cv::imread(tree_leaves_[i]->img_path_.c_str());
+    assert(image.type() == CV_8UC3);
+    cv::resize(image, resized_img, resized_img.size());
     resized_img.copyTo(roi);
   }
   return canvas;
@@ -169,12 +173,11 @@ bool CollageAdvanced::OutputCollageHtml(const std::string output_html_path) {
   output_html << "\t<body>\n";
   output_html << "\t\t<div style=\"position:absolute;\">\n";
   for (int i = 0; i < image_num_; ++i) {
-    int img_ind = tree_leaves_[i]->image_index_;
     output_html << "\t\t\t<a href=\"";
-    output_html << image_path_vec_[img_ind];
+    output_html << tree_leaves_[i]->img_path_;
     output_html << "\">\n";
     output_html << "\t\t\t\t<img src=\"";
-    output_html << image_path_vec_[img_ind];
+    output_html << tree_leaves_[i]->img_path_;
     output_html << "\" style=\"position:absolute; width:";
     output_html << tree_leaves_[i]->position_.width_ - 1;
     output_html << "px; height:";
@@ -200,7 +203,7 @@ bool CollageAdvanced::OutputCollageHtml(const std::string output_html_path) {
 bool CollageAdvanced::ReadImageList(std::string input_image_list) {
   std::ifstream input_list(input_image_list.c_str());
   if (!input_list) {
-    std::cout << "Error: ReadImageList()" << std::endl;
+    std::cout << "Error: ReadImageList" << std::endl;
     return false;
   }
   int index = 0;
@@ -209,11 +212,11 @@ bool CollageAdvanced::ReadImageList(std::string input_image_list) {
     std::getline(input_list, img_path);
     // std::cout << img_path <<std::endl;
     cv::Mat img = cv::imread(img_path.c_str());
-    image_vec_.push_back(img);
     AlphaUnit new_unit;
     new_unit.image_ind_ = index;
     new_unit.alpha_ = static_cast<float>(img.cols) / img.rows;
     new_unit.alpha_recip_ = static_cast<float>(img.rows) / img.cols;
+    new_unit.image_path_ = img_path;
     image_alpha_vec_.push_back(new_unit);
     image_path_vec_.push_back(img_path);
     ++index;
@@ -361,7 +364,8 @@ TreeNode* CollageAdvanced::GuidedTree(TreeNode* parent,
     bool success = FindOneImage(expect_alpha,
                                 alpha_array,
                                 node->image_index_,
-                                node->alpha_);
+                                node->alpha_,
+                                node->img_path_);
     if (!success) {
       std::cout << "Error: GuidedTree 1" << std::endl;
       return NULL;
@@ -387,8 +391,10 @@ TreeNode* CollageAdvanced::GuidedTree(TreeNode* parent,
                                  node->split_type_,
                                  l_child->image_index_,
                                  l_child->alpha_,
+                                 l_child->img_path_,
                                  r_child->image_index_,
-                                 r_child->alpha_);
+                                 r_child->alpha_,
+                                 r_child->img_path_);
     if (!success) {
       std::cout << "Error: GuidedTree 2" << std::endl;
       return NULL;
@@ -436,7 +442,8 @@ TreeNode* CollageAdvanced::GuidedTree(TreeNode* parent,
 bool CollageAdvanced::FindOneImage(float expect_alpha,
                                    std::vector<AlphaUnit>& alpha_array,
                                    int& find_img_ind,
-                                   float& find_img_alpha) {
+                                   float& find_img_alpha,
+                                   std::string & find_img_path) {
   if (alpha_array.size() == 0) return false;
   // Since alpha_array has already been sorted, we use binary search to find
   // the best-match result.
@@ -464,6 +471,7 @@ bool CollageAdvanced::FindOneImage(float expect_alpha,
   // Dispatch image to leaf node.
   find_img_alpha = alpha_array[finder].alpha_;
   find_img_ind = alpha_array[finder].image_ind_;
+  find_img_path = alpha_array[finder].image_path_;
   // Remove the find result from alpha_array.
 //  std::cout<< alpha_array[finder].image_ind_ << std::endl;
   alpha_array.erase(alpha_array.begin() + finder);
@@ -480,8 +488,10 @@ bool CollageAdvanced::FindTwoImages(float expect_alpha,
                                     char& find_split_type,
                                     int& find_img_ind_1,
                                     float& find_img_alpha_1,
+                                    std::string& find_img_path_1,
                                     int& find_img_ind_2,
-                                    float& find_img_alpha_2) {
+                                    float& find_img_alpha_2,
+                                    std::string& find_img_path_2) {
   if ((alpha_array.size() == 0) || (alpha_array.size() == 1)) return false;
   // There are two situations:
   // [1]: parent node is vertival cut.
@@ -585,8 +595,10 @@ bool CollageAdvanced::FindTwoImages(float expect_alpha,
     find_split_type = 'v';
     find_img_ind_1 = alpha_array[best_v_i].image_ind_;
     find_img_ind_2 = alpha_array[best_v_j].image_ind_;
+    find_img_path_1 = alpha_array[best_v_i].image_path_;
     find_img_alpha_1 = alpha_array[best_v_i].alpha_;
     find_img_alpha_2 = alpha_array[best_v_j].alpha_;
+    find_img_path_2 = alpha_array[best_v_j].image_path_;
     
 //    std::cout << alpha_array[best_v_i].image_ind_
 //    << ":" << alpha_array[best_v_j].image_ind_ << std::endl;
@@ -597,9 +609,10 @@ bool CollageAdvanced::FindTwoImages(float expect_alpha,
     find_split_type = 'h';
     find_img_ind_1 = alpha_array[best_h_i].image_ind_;
     find_img_ind_2 = alpha_array[best_h_j].image_ind_;
+    find_img_path_1 = alpha_array[best_h_i].image_path_;
     find_img_alpha_1 = alpha_array[best_h_i].alpha_;
     find_img_alpha_2 = alpha_array[best_h_j].alpha_;
-    
+    find_img_path_2 = alpha_array[best_h_j].image_path_;
 //    std::cout << alpha_array[best_h_i].image_ind_
 //    << ":" << alpha_array[best_h_j].image_ind_ << std::endl;
     
