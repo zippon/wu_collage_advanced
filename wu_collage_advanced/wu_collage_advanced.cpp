@@ -52,8 +52,10 @@ bool CollageAdvanced::CreateCollage(float expect_alpha) {
   tree_root_->position_.y_ = 0;
   tree_root_->position_.height_ = canvas_height_;
   tree_root_->position_.width_ = canvas_width_;
-  CalculatePositions(tree_root_->left_child_);
-  CalculatePositions(tree_root_->right_child_);
+  if (tree_root_->left_child_)
+    CalculatePositions(tree_root_->left_child_);
+  if (tree_root_->right_child_)
+    CalculatePositions(tree_root_->right_child_);
   return true;
 }
 
@@ -121,8 +123,10 @@ int CollageAdvanced::CreateCollage(float expect_alpha, float thresh) {
   tree_root_->position_.y_ = 0;
   tree_root_->position_.height_ = canvas_height_;
   tree_root_->position_.width_ = canvas_width_;
-  CalculatePositions(tree_root_->left_child_);
-  CalculatePositions(tree_root_->right_child_);
+  if (tree_root_->left_child_)
+    CalculatePositions(tree_root_->left_child_);
+  if (tree_root_->right_child_)
+    CalculatePositions(tree_root_->right_child_);
   return total_iter_counter;
 }
 
@@ -172,13 +176,13 @@ bool CollageAdvanced::OutputCollageHtml(const std::string output_html_path) {
     output_html << "\t\t\t\t<img src=\"";
     output_html << image_path_vec_[img_ind];
     output_html << "\" style=\"position:absolute; width:";
-    output_html << tree_leaves_[i]->position_.width_;
+    output_html << tree_leaves_[i]->position_.width_ - 1;
     output_html << "px; height:";
-    output_html << tree_leaves_[i]->position_.height_;
+    output_html << tree_leaves_[i]->position_.height_ - 1;
     output_html << "px; left:";
-    output_html << tree_leaves_[i]->position_.x_;
+    output_html << tree_leaves_[i]->position_.x_ - 1;
     output_html << "px; top:";
-    output_html << tree_leaves_[i]->position_.y_;
+    output_html << tree_leaves_[i]->position_.y_ - 1;
     output_html << "px;\">\n";
     output_html << "\t\t\t</a>\n";
   }
