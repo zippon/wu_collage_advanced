@@ -141,7 +141,8 @@ private:
                        char child_type,
                        float expect_alpha,
                        int image_num,
-                       std::vector<AlphaUnit>& alpha_array);
+                       std::vector<AlphaUnit>& alpha_array,
+                       float root_alpha);
   // Find the best-match aspect ratio image in the given array.
   // alpha_array is the array storing aspect ratios.
   // find_img_ind is the best-match image index according to image_vec_.

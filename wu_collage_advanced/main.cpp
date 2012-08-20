@@ -36,8 +36,8 @@ int main(int argc, const char * argv[])
   
   start = clock();
   //bool success = my_collage.CreateCollage();
-  bool success = my_collage.CreateCollage(expect_alpha, 1.1);
-  if (!success) {
+  int success = my_collage.CreateCollage(expect_alpha, 1.1);
+  if (success == -1) {
     return -1;
   }
   end = clock();

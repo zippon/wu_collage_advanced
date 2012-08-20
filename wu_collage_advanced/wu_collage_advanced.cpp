@@ -326,7 +326,8 @@ void CollageAdvanced::GenerateTree(float expect_alpha) {
   }
   
   // Generate a new tree by using divide-and-conquer.
-  tree_root_ = GuidedTree(tree_root_, 'N', expect_alpha, image_num_, local_alpha);
+  tree_root_ = GuidedTree(tree_root_, 'N', expect_alpha,
+                          image_num_, local_alpha, expect_alpha);
   // After guided tree generation, all the images have been dispatched to leaves.
   assert(local_alpha.size() == 0);
   return;
@@ -337,7 +338,8 @@ TreeNode* CollageAdvanced::GuidedTree(TreeNode* parent,
                                       char child_type,
                                       float expect_alpha,
                                       int img_num,
-                                      std::vector<AlphaUnit>& alpha_array) {
+                                      std::vector<AlphaUnit>& alpha_array,
+                                      float root_alpha) {
   if (alpha_array.size() == 0) {
     std::cout << "Error: GuidedTree 0" << std::endl;
     return NULL;
@@ -394,8 +396,8 @@ TreeNode* CollageAdvanced::GuidedTree(TreeNode* parent,
     float new_exp_alpha = 0;
     // Random split type.
     int v_h = random(2);
-    if (expect_alpha > 10) v_h = 1;
-    if (expect_alpha < 0.1) v_h = 0;
+    if (expect_alpha > root_alpha * 2) v_h = 1;
+    if (expect_alpha < root_alpha / 2) v_h = 0;
     if (v_h == 1) {
       node->split_type_ = 'v';
       new_exp_alpha = expect_alpha / 2;
@@ -407,12 +409,14 @@ TreeNode* CollageAdvanced::GuidedTree(TreeNode* parent,
     int new_img_num_2 = img_num - new_img_num_1;
     if (new_img_num_1 > 0) {
       TreeNode* l_child = new TreeNode();
-      l_child = GuidedTree(node, 'l', new_exp_alpha, new_img_num_1, alpha_array);
+      l_child = GuidedTree(node, 'l', new_exp_alpha,
+                           new_img_num_1, alpha_array, root_alpha);
       node->left_child_ = l_child;
     }
     if (new_img_num_2 > 0) {
       TreeNode* r_child = new TreeNode();
-      r_child = GuidedTree(node, 'r', new_exp_alpha, new_img_num_2, alpha_array);
+      r_child = GuidedTree(node, 'r', new_exp_alpha,
+                           new_img_num_2, alpha_array, root_alpha);
       node->right_child_ = r_child;
     }
   }
