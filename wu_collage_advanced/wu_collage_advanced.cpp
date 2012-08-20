@@ -15,6 +15,27 @@ bool less_than(AlphaUnit m, AlphaUnit n) {
   return m.alpha_ < n.alpha_;
 }
 
+CollageAdvanced::CollageAdvanced(std::vector<std::string> input_image_list,
+                                 int canvas_height) {
+  for (int i = 0; i < input_image_list.size(); ++i) {
+    std::string img_path = input_image_list[i];
+    cv::Mat img = cv::imread(img_path.c_str());
+    image_vec_.push_back(img);
+    AlphaUnit new_unit;
+    new_unit.image_ind_ = i;
+    new_unit.alpha_ = static_cast<float>(img.cols) / img.rows;
+    new_unit.alpha_recip_ = static_cast<float>(img.rows) / img.cols;
+    image_alpha_vec_.push_back(new_unit);
+    image_path_vec_.push_back(img_path);
+  }
+  canvas_height_ = canvas_height;
+  canvas_alpha_ = -1;
+  canvas_width_ = -1;
+  image_num_ = static_cast<int>(input_image_list.size());
+  srand(static_cast<unsigned>(time(0)));
+  tree_root_ = new TreeNode();
+}
+
 // Create collage.
 bool CollageAdvanced::CreateCollage(float expect_alpha) {
   assert(expect_alpha > 0);
