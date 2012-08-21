@@ -30,7 +30,7 @@ CollageAdvanced::CollageAdvanced(std::vector<std::string> input_image_list,
   }
   canvas_width_ = canvas_width;
   canvas_alpha_ = -1;
-  canvas_width_ = -1;
+  canvas_height_ = -1;
   image_num_ = static_cast<int>(input_image_list.size());
   srand(static_cast<unsigned>(time(0)));
   tree_root_ = new TreeNode();
