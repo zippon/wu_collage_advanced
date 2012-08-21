@@ -20,10 +20,10 @@ int main(int argc, const char * argv[])
     return 0;
   }
   std::string image_list(argv[1]);
-  int canvas_height = 0;
-  while ((canvas_height < 100) || (canvas_height > 2000)) {
-    std::cout << "canvas_height [100, 2000]: ";
-    std::cin >> canvas_height;
+  int canvas_width = 0;
+  while ((canvas_width < 100) || (canvas_width > 2000)) {
+    std::cout << "canvas_width [100, 2000]: ";
+    std::cin >> canvas_width;
   }
   float expect_alpha = 0;
   while ((expect_alpha < 0.1) || (expect_alpha > 10)) {
@@ -32,7 +32,7 @@ int main(int argc, const char * argv[])
   }
   
   clock_t start, end;
-  CollageAdvanced my_collage(image_list, canvas_height);
+  CollageAdvanced my_collage(image_list, canvas_width);
   
   start = clock();
   //bool success = my_collage.CreateCollage();
@@ -41,11 +41,10 @@ int main(int argc, const char * argv[])
     return -1;
   }
   end = clock();
-  
   cv::Mat canvas = my_collage.OutputCollageImage();
-  int canvas_width = my_collage.canvas_width();
+  int canvas_height = my_collage.canvas_height();
   float canvas_alpha = my_collage.canvas_alpha();
-  std::cout << "canvas_width: " << canvas_width << std::endl;
+  std::cout << "canvas_height: " << canvas_height << std::endl;
   std::cout << "canvas_alpha: " << canvas_alpha << std::endl;
   std::cout << "processing time: " << (end - start) * 1000000 / CLOCKS_PER_SEC
   << " us (10e-6 s)" << std::endl;

@@ -77,16 +77,16 @@ public:
   // We need to let the user decide the canvas height.
   // Since the aspect ratio will be calculate by our program, we can compute
   // canvas width accordingly.
-  CollageAdvanced(const std::string input_image_list, int canvas_height) {
+  CollageAdvanced(const std::string input_image_list, int canvas_width) {
     ReadImageList(input_image_list);
-    canvas_height_ = canvas_height;
+    canvas_width_ = canvas_width;
     canvas_alpha_ = -1;
-    canvas_width_ = -1;
+    canvas_height_ = -1;
     image_num_ = static_cast<int>(image_path_vec_.size());
     srand(static_cast<unsigned>(time(0)));
     tree_root_ = new TreeNode();
   }
-  CollageAdvanced(const std::vector<std::string> input_image_list, int canvas_height);
+  CollageAdvanced(const std::vector<std::string> input_image_list, int canvas_width);
   ~CollageAdvanced() {
     ReleaseTree(tree_root_);
     image_alpha_vec_.clear();

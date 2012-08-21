@@ -16,7 +16,7 @@ bool less_than(AlphaUnit m, AlphaUnit n) {
 }
 
 CollageAdvanced::CollageAdvanced(std::vector<std::string> input_image_list,
-                                 int canvas_height) {
+                                 int canvas_width) {
   for (int i = 0; i < input_image_list.size(); ++i) {
     std::string img_path = input_image_list[i];
     cv::Mat img = cv::imread(img_path.c_str());
@@ -28,7 +28,7 @@ CollageAdvanced::CollageAdvanced(std::vector<std::string> input_image_list,
     image_alpha_vec_.push_back(new_unit);
     image_path_vec_.push_back(img_path);
   }
-  canvas_height_ = canvas_height;
+  canvas_width_ = canvas_width;
   canvas_alpha_ = -1;
   canvas_width_ = -1;
   image_num_ = static_cast<int>(input_image_list.size());
@@ -46,7 +46,7 @@ bool CollageAdvanced::CreateCollage(float expect_alpha) {
   GenerateTree(expect_alpha);
   // Step 3: Calculate the actual aspect ratio for the generated collage.
   canvas_alpha_ = CalculateAlpha(tree_root_);
-  canvas_width_ = static_cast<int>(canvas_height_ * canvas_alpha_);
+  canvas_height_ = static_cast<int>(canvas_width_ / canvas_alpha_);
   // Step 4: Get the position for the nodes in the binary tree.
   tree_root_->position_.x_ = 0;
   tree_root_->position_.y_ = 0;
@@ -118,7 +118,7 @@ int CollageAdvanced::CreateCollage(float expect_alpha, float thresh) {
   std::cout << "Tree generation number is: " << tree_gene_counter << std::endl;
   std::cout << "Total iteration number is: " << total_iter_counter << std::endl;
   // After adjustment, set the position for all the tile images.
-  canvas_width_ = static_cast<int>(canvas_height_ * canvas_alpha_);
+  canvas_height_ = static_cast<int>(canvas_width_ / canvas_alpha_);
   tree_root_->position_.x_ = 0;
   tree_root_->position_.y_ = 0;
   tree_root_->position_.height_ = canvas_height_;
