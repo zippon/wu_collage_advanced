@@ -41,7 +41,6 @@ public:
     alpha_ = 0;
     alpha_expect_ = 0;
     position_ = FloatRect();
-    image_index_ = -1;
     left_child_ = NULL;
     right_child_ = NULL;
     parent_ = NULL;
@@ -54,7 +53,6 @@ public:
   float alpha_expect_;   // If this node is a leaf, we set expected aspect ratio of this node.
   float alpha_;          // If this node is a leaf, we set actual aspect ratio of this node.
   FloatRect position_;    // The position of the node on canvas.
-  int image_index_;      // If this node is a leaf, it is related with a image.
   TreeNode* left_child_;
   TreeNode* right_child_;
   TreeNode* parent_;
@@ -148,13 +146,11 @@ private:
                        float root_alpha);
   // Find the best-match aspect ratio image in the given array.
   // alpha_array is the array storing aspect ratios.
-  // find_img_ind is the best-match image index according to image_vec_.
   // find_img_alpha is the best-match alpha value.
   // After finding the best-match one, the AlphaUnit is removed from alpha_array,
   // which means that we have dispatched one image with a tree leaf.
   bool FindOneImage(float expect_alpha,
                     std::vector<AlphaUnit>& alpha_array,
-                    int& find_img_ind,
                     float& find_img_alpha,
                     std::string& find_img_path);
   // Find the best fit aspect ratio (two images) in the given array.
@@ -165,10 +161,8 @@ private:
   bool FindTwoImages(float expect_alpha,
                      std::vector<AlphaUnit>& alpha_array,
                      char& find_split_type,
-                     int& find_img_ind_1,
                      float& find_img_alpha_1,
                      std::string& find_img_path_1,
-                     int& find_img_ind_2,
                      float& find_img_alpha_2,
                      std::string& find_img_path_2);
   // Top-down adjust aspect ratio for the final collage.

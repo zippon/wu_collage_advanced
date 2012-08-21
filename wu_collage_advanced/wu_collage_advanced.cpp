@@ -363,7 +363,6 @@ TreeNode* CollageAdvanced::GuidedTree(TreeNode* parent,
     // Find the best fit aspect ratio.
     bool success = FindOneImage(expect_alpha,
                                 alpha_array,
-                                node->image_index_,
                                 node->alpha_,
                                 node->img_path_);
     if (!success) {
@@ -387,12 +386,11 @@ TreeNode* CollageAdvanced::GuidedTree(TreeNode* parent,
     node->right_child_ = r_child;
     // Find the best fit aspect ratio with two nodes.
     // As well as the split type for node.
-    bool success = FindTwoImages(expect_alpha, alpha_array,
+    bool success = FindTwoImages(expect_alpha,
+                                 alpha_array,
                                  node->split_type_,
-                                 l_child->image_index_,
                                  l_child->alpha_,
                                  l_child->img_path_,
-                                 r_child->image_index_,
                                  r_child->alpha_,
                                  r_child->img_path_);
     if (!success) {
@@ -435,13 +433,11 @@ TreeNode* CollageAdvanced::GuidedTree(TreeNode* parent,
 
 // Find the best-match aspect ratio image in the given array.
 // alpha_array is the array storing aspect ratios.
-// find_img_ind is the best-match image index according to image_vec_.
 // find_img_alpha is the best-match alpha value.
 // After finding the best-match one, the AlphaUnit is removed from alpha_array,
 // which means that we have dispatched one image with a tree leaf.
 bool CollageAdvanced::FindOneImage(float expect_alpha,
                                    std::vector<AlphaUnit>& alpha_array,
-                                   int& find_img_ind,
                                    float& find_img_alpha,
                                    std::string & find_img_path) {
   if (alpha_array.size() == 0) return false;
@@ -470,7 +466,6 @@ bool CollageAdvanced::FindOneImage(float expect_alpha,
   
   // Dispatch image to leaf node.
   find_img_alpha = alpha_array[finder].alpha_;
-  find_img_ind = alpha_array[finder].image_ind_;
   find_img_path = alpha_array[finder].image_path_;
   // Remove the find result from alpha_array.
 //  std::cout<< alpha_array[finder].image_ind_ << std::endl;
@@ -486,10 +481,8 @@ bool CollageAdvanced::FindOneImage(float expect_alpha,
 bool CollageAdvanced::FindTwoImages(float expect_alpha,
                                     std::vector<AlphaUnit>& alpha_array,
                                     char& find_split_type,
-                                    int& find_img_ind_1,
                                     float& find_img_alpha_1,
                                     std::string& find_img_path_1,
-                                    int& find_img_ind_2,
                                     float& find_img_alpha_2,
                                     std::string& find_img_path_2) {
   if ((alpha_array.size() == 0) || (alpha_array.size() == 1)) return false;
@@ -593,8 +586,6 @@ bool CollageAdvanced::FindTwoImages(float expect_alpha,
   
   if (ratio_diff_v <= ratio_diff_h) {
     find_split_type = 'v';
-    find_img_ind_1 = alpha_array[best_v_i].image_ind_;
-    find_img_ind_2 = alpha_array[best_v_j].image_ind_;
     find_img_path_1 = alpha_array[best_v_i].image_path_;
     find_img_alpha_1 = alpha_array[best_v_i].alpha_;
     find_img_alpha_2 = alpha_array[best_v_j].alpha_;
@@ -607,8 +598,6 @@ bool CollageAdvanced::FindTwoImages(float expect_alpha,
     alpha_array.erase(alpha_array.begin() + best_v_i);
   } else {
     find_split_type = 'h';
-    find_img_ind_1 = alpha_array[best_h_i].image_ind_;
-    find_img_ind_2 = alpha_array[best_h_j].image_ind_;
     find_img_path_1 = alpha_array[best_h_i].image_path_;
     find_img_alpha_1 = alpha_array[best_h_i].alpha_;
     find_img_alpha_2 = alpha_array[best_h_j].alpha_;
