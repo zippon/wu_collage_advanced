@@ -15,7 +15,7 @@
 #include <vector>
 #include <time.h>
 #define random(x) (rand() % x)
-#define MAX_ITER_NUM 100       // Max number of aspect ratio adjustment.
+#define MAX_ITER_NUM 100      // Max number of aspect ratio adjustment.
 #define MAX_TREE_GENE_NUM 100  // Max number of tree re-generation.
 
 class FloatRect {
@@ -166,7 +166,7 @@ private:
                      float& find_img_alpha_2,
                      std::string& find_img_path_2);
   // Top-down adjust aspect ratio for the final collage.
-  void AdjustAlpha(TreeNode* node, float thresh);
+  bool AdjustAlpha(TreeNode* node, float thresh);
   
   // Vector containing input image paths.
   std::vector<std::string> image_path_vec_;

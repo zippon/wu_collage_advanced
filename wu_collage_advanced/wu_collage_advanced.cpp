@@ -88,15 +88,21 @@ int CollageAdvanced::CreateCollage(float expect_alpha, float thresh) {
   while ((canvas_alpha_ < lower_bound) || (canvas_alpha_ > upper_bound)) {
     // Call the following function to adjust the aspect ratio from top to down.
     tree_root_->alpha_expect_ = expect_alpha;
-    AdjustAlpha(tree_root_, thresh);
+    bool changed = false;
+    changed = AdjustAlpha(tree_root_, thresh);
     // Calculate actual aspect ratio again.
     canvas_alpha_ = CalculateAlpha(tree_root_);
     ++iter_counter;
     ++total_iter_counter;
-    if (iter_counter > MAX_ITER_NUM) {
-      std::cout << "*******************************" << std::endl;
-      std::cout << "max iteration number reached..." << std::endl;
-      std::cout << "*******************************" << std::endl << std::endl;
+    if ((iter_counter > MAX_ITER_NUM) || (!changed)) {
+      std::cout << "********************************************" << std::endl;
+      if (changed) {
+        std::cout << "max iteration number reached..." << std::endl;
+      } else {
+        std::cout << "tree structure unchanged after iteration: "
+        << iter_counter << std::endl;
+      }
+      std::cout << "********************************************" << std::endl << std::endl;
       // We should generate binary tree again
       iter_counter = 1;
       ++total_iter_counter;
@@ -611,20 +617,24 @@ bool CollageAdvanced::FindTwoImages(float expect_alpha,
   return true;
 }
 
-void CollageAdvanced::AdjustAlpha(TreeNode *node, float thresh) {
+bool CollageAdvanced::AdjustAlpha(TreeNode *node, float thresh) {
   assert(thresh > 1);
-  if (node->is_leaf_) return;
-  if (node == NULL) return;
+  if (node->is_leaf_) return false;
+  if (node == NULL) return false;
+  
+  bool changed = false;
   
   float thresh_2 = 1 + (thresh - 1) / 2;
   
   if (node->alpha_ > node->alpha_expect_ * thresh_2) {
     // Too big actual aspect ratio.
+    if (node->split_type_ == 'v') changed = true;
     node->split_type_ = 'h';
     node->left_child_->alpha_expect_ = node->alpha_expect_ * 2;
     node->right_child_->alpha_expect_ = node->alpha_expect_ * 2;
   } else if (node->alpha_ < node->alpha_expect_ / thresh_2 ) {
     // Too small actual aspect ratio.
+    if (node->split_type_ == 'h') changed = true;
     node->split_type_ = 'v';
     node->left_child_->alpha_expect_ = node->alpha_expect_ / 2;
     node->right_child_->alpha_expect_ = node->alpha_expect_ / 2;
@@ -638,9 +648,10 @@ void CollageAdvanced::AdjustAlpha(TreeNode *node, float thresh) {
       node->right_child_->alpha_expect_ = node->alpha_expect_ * 2;
     } else {
       std::cout << "Error: AdjustAlpha" << std::endl;
-      return;
+      return false;
     }
   }
-  AdjustAlpha(node->left_child_, thresh);
-  AdjustAlpha(node->right_child_, thresh);
+  bool changed_l = AdjustAlpha(node->left_child_, thresh);
+  bool changed_r = AdjustAlpha(node->right_child_, thresh);
+  return changed||changed_l||changed_r;
 }
