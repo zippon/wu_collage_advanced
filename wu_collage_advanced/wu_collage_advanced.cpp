@@ -172,12 +172,12 @@ bool CollageAdvanced::OutputCollageHtml(const std::string output_html_path) {
   
   output_html << "<!DOCTYPE html>\n";
   output_html << "<html>\n";
-  output_html << "<h1 style=\"text-align:left\">\n";
+  output_html << "<h1 style=\"text-align:center\">\n";
   output_html << "\tImage Collage\n";
   output_html << "</h1>\n";
   output_html << "<hr //>\n";
   output_html << "\t<body>\n";
-  output_html << "\t\t<div style=\"position:absolute;\">\n";
+  output_html << "\t\t<div style=\"position:absolute; left:200px;\">\n";
   for (int i = 0; i < image_num_; ++i) {
     output_html << "\t\t\t<a href=\"";
     output_html << tree_leaves_[i]->img_path_;
@@ -195,6 +195,13 @@ bool CollageAdvanced::OutputCollageHtml(const std::string output_html_path) {
     output_html << "px;\">\n";
     output_html << "\t\t\t</a>\n";
   }
+  output_html << "\t\t</div>\n";
+  output_html << "\t\t<div style=\"text-align:center\">\n";
+  output_html << "\t\t<p style=\"position:relative; top:";
+  output_html << canvas_height() << "px\">\n";
+  output_html << "\t\t\t<a href=\"   \"><-Back</a>\n";
+  output_html << "\t\t\t&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp";
+  output_html << "\t\t\t<a href=\"   \">Next-></a>\n</p>\n";
   output_html << "\t\t</div>\n";
   output_html << "\t</body>\n";
   output_html << "</html>";
