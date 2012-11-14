@@ -16,7 +16,7 @@
 #include <time.h>
 #define random(x) (rand() % x)
 #define MAX_ITER_NUM 100      // Max number of aspect ratio adjustment.
-#define MAX_TREE_GENE_NUM 100  // Max number of tree re-generation.
+#define MAX_TREE_GENE_NUM 10000  // Max number of tree re-generation.
 
 class FloatRect {
 public:
@@ -75,16 +75,14 @@ public:
   // We need to let the user decide the canvas height.
   // Since the aspect ratio will be calculate by our program, we can compute
   // canvas width accordingly.
-  CollageAdvanced(const std::string input_image_list, int canvas_width) {
+  CollageAdvanced(const std::string input_image_list, const int canvas_width) : canvas_alpha_(-1),
+      canvas_width_(canvas_width), canvas_height_(-1) {
     ReadImageList(input_image_list);
-    canvas_width_ = canvas_width;
-    canvas_alpha_ = -1;
-    canvas_height_ = -1;
     image_num_ = static_cast<int>(image_path_vec_.size());
     srand(static_cast<unsigned>(time(0)));
     tree_root_ = new TreeNode();
   }
-  CollageAdvanced(const std::vector<std::string> input_image_list, int canvas_width);
+  CollageAdvanced(const std::vector<std::string> input_image_list, const int canvas_width);
   ~CollageAdvanced() {
     ReleaseTree(tree_root_);
     image_alpha_vec_.clear();
@@ -92,7 +90,7 @@ public:
   }
   
   // Create collage.
-  bool CreateCollage(float expect_alpha);
+  bool CreateCollage(const float expect_alpha);
   
   // If we use CreateCollage, the generated collage may have strange aspect ratio such as
   // too big or too small, which seems to be difficult to be shown. We let the user to
@@ -104,7 +102,9 @@ public:
   // We also define MAX_ITER_NUM = 100,
   // If max iteration number is reached and we cannot find a good result aspect ratio,
   // this function returns -1.
-  int CreateCollage(float expect_alpha, float thresh);
+  int CreateCollage(const float expect_alpha, const float thresh,
+                    int total_tree_generation,
+                    int total_adjust_iteration);
   
   // Output collage into a single image.
   cv::Mat OutputCollageImage() const;
@@ -151,7 +151,7 @@ private:
   // which means that we have dispatched one image with a tree leaf.
   bool FindOneImage(float expect_alpha,
                     std::vector<AlphaUnit>& alpha_array,
-                    float& find_img_alpha,
+                    float find_img_alpha,
                     std::string& find_img_path);
   // Find the best fit aspect ratio (two images) in the given array.
   // find_split_type returns 'h' or 'v'.
@@ -160,10 +160,10 @@ private:
   // removed, which means we have dispatched two images.
   bool FindTwoImages(float expect_alpha,
                      std::vector<AlphaUnit>& alpha_array,
-                     char& find_split_type,
-                     float& find_img_alpha_1,
+                     char find_split_type,
+                     float find_img_alpha_1,
                      std::string& find_img_path_1,
-                     float& find_img_alpha_2,
+                     float find_img_alpha_2,
                      std::string& find_img_path_2);
   // Top-down adjust aspect ratio for the final collage.
   bool AdjustAlpha(TreeNode* node, float thresh);

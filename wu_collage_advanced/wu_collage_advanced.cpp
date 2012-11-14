@@ -16,7 +16,7 @@ bool less_than(AlphaUnit m, AlphaUnit n) {
 }
 
 CollageAdvanced::CollageAdvanced(std::vector<std::string> input_image_list,
-                                 int canvas_width) {
+                                 const int canvas_width) {
   for (int i = 0; i < input_image_list.size(); ++i) {
     std::string img_path = input_image_list[i];
     cv::Mat img = cv::imread(img_path.c_str());
@@ -37,7 +37,7 @@ CollageAdvanced::CollageAdvanced(std::vector<std::string> input_image_list,
 }
 
 // Create collage.
-bool CollageAdvanced::CreateCollage(float expect_alpha) {
+bool CollageAdvanced::CreateCollage(const float expect_alpha) {
   assert(expect_alpha > 0);
   
   // Step 1: Sort the image_alpha_ vector fot generate guided binary tree.
@@ -69,7 +69,10 @@ bool CollageAdvanced::CreateCollage(float expect_alpha) {
 // We also define MAX_ITER_NUM = 100,
 // If max iteration number is reached and we cannot find a good result aspect ratio,
 // this function returns -1.
-int CollageAdvanced::CreateCollage(float expect_alpha, float thresh) {
+int CollageAdvanced::CreateCollage(const float expect_alpha,
+                                   const float thresh,
+                                   int total_tree_generation,
+                                   int total_adjust_iteration) {
   assert(thresh > 1);
   assert(expect_alpha > 0);
   tree_root_->alpha_expect_ = expect_alpha;
@@ -87,6 +90,8 @@ int CollageAdvanced::CreateCollage(float expect_alpha, float thresh) {
   
   while ((canvas_alpha_ < lower_bound) || (canvas_alpha_ > upper_bound)) {
     // Call the following function to adjust the aspect ratio from top to down.
+    
+    /*************************************************************************/
     tree_root_->alpha_expect_ = expect_alpha;
     bool changed = false;
     changed = AdjustAlpha(tree_root_, thresh);
@@ -102,10 +107,12 @@ int CollageAdvanced::CreateCollage(float expect_alpha, float thresh) {
         std::cout << "tree structure unchanged after iteration: "
         << iter_counter << std::endl;
       }
-      std::cout << "********************************************" << std::endl << std::endl;
+      std::cout << "********************************************" << std::endl;
       // We should generate binary tree again
       iter_counter = 1;
       ++total_iter_counter;
+     /*************************************************************************/
+    
       GenerateTree(expect_alpha);
       canvas_alpha_ = CalculateAlpha(tree_root_);
       ++tree_gene_counter;
@@ -121,9 +128,11 @@ int CollageAdvanced::CreateCollage(float expect_alpha, float thresh) {
     }
   }
   // std::cout << "Canvas generation success!" << std::endl;
-  std::cout << "Tree generation number is: " << tree_gene_counter << std::endl;
-  std::cout << "Total iteration number is: " << total_iter_counter << std::endl;
+  // std::cout << "Tree generation number is: " << tree_gene_counter << std::endl;
+  // std::cout << "Total iteration number is: " << total_iter_counter << std::endl;
   // After adjustment, set the position for all the tile images.
+  total_tree_generation = tree_gene_counter;
+  total_adjust_iteration = total_iter_counter;
   canvas_height_ = static_cast<int>(canvas_width_ / canvas_alpha_);
   tree_root_->position_.x_ = 0;
   tree_root_->position_.y_ = 0;
@@ -133,7 +142,7 @@ int CollageAdvanced::CreateCollage(float expect_alpha, float thresh) {
     CalculatePositions(tree_root_->left_child_);
   if (tree_root_->right_child_)
     CalculatePositions(tree_root_->right_child_);
-  return total_iter_counter;
+  return 1;
 }
 
 // After calling CreateCollage() and FastAdjust(), call this function to save result
@@ -172,19 +181,17 @@ bool CollageAdvanced::OutputCollageHtml(const std::string output_html_path) {
   
   output_html << "<!DOCTYPE html>\n";
   output_html << "<html>\n";
-//  output_html << "<h1 style=\"text-align:center\">\n";
-//  output_html << "\tImage Collage\n";
-//  output_html << "</h1>\n";
-//  output_html << "<hr //>\n";
-  output_html << "<style type=\"text/css\">";
+  output_html << "<script src=\"/Users/WU//Downloads/software/prettyPhoto/js/jquery-1.6.1.min.js\" type=\"text/javascript\" charset=\"utf-8\"></script> <link rel=\"stylesheet\" href=\"/Users/WU//Downloads/software/prettyPhoto/css/prettyPhoto.css\" type=\"text/css\" media=\"screen\" charset=\"utf-8\" /> <script src=\"/Users/WU//Downloads/software/prettyPhoto/js/jquery.prettyPhoto.js\" type=\"text/javascript\" charset=\"utf-8\"></script>\n";
+  output_html << "<style type=\"text/css\">\n";
   output_html << "body {background-image:url(/Users/WU/Projects/2012Collage/JMM_Demo/bg_resize.png);  background-position: top; background-repeat:repeat-x; background-attachment:fixed}\n";
   output_html << "</style>\n";
-  output_html << "\t<body >\n";
-  output_html << "\t\t<div style=\"margin:20px auto; width:50%; position:relative;\">\n";
+  output_html << "\t<body>\n";
+  output_html << "<script type=\"text/javascript\" charset=\"utf-8\"> $(document).ready(function(){$(\"a[rel^='prettyPhoto']\").prettyPhoto();});</script>";
+  output_html << "\t\t<div style=\"margin:20px auto; width:60%; position:relative;\">\n";
   for (int i = 0; i < image_num_; ++i) {
     output_html << "\t\t\t<a href=\"";
     output_html << tree_leaves_[i]->img_path_;
-    output_html << "\">\n";
+    output_html << "\" rel=\"prettyPhoto[pp_gal]\">\n";
     output_html << "\t\t\t\t<img src=\"";
     output_html << tree_leaves_[i]->img_path_;
     output_html << "\" style=\"position:absolute; width:";
@@ -454,7 +461,7 @@ TreeNode* CollageAdvanced::GuidedTree(TreeNode* parent,
 // which means that we have dispatched one image with a tree leaf.
 bool CollageAdvanced::FindOneImage(float expect_alpha,
                                    std::vector<AlphaUnit>& alpha_array,
-                                   float& find_img_alpha,
+                                   float find_img_alpha,
                                    std::string & find_img_path) {
   if (alpha_array.size() == 0) return false;
   // Since alpha_array has already been sorted, we use binary search to find
@@ -496,10 +503,10 @@ bool CollageAdvanced::FindOneImage(float expect_alpha,
 // removed, which means we have dispatched two images.
 bool CollageAdvanced::FindTwoImages(float expect_alpha,
                                     std::vector<AlphaUnit>& alpha_array,
-                                    char& find_split_type,
-                                    float& find_img_alpha_1,
+                                    char find_split_type,
+                                    float find_img_alpha_1,
                                     std::string& find_img_path_1,
-                                    float& find_img_alpha_2,
+                                    float find_img_alpha_2,
                                     std::string& find_img_path_2) {
   if ((alpha_array.size() == 0) || (alpha_array.size() == 1)) return false;
   // There are two situations:

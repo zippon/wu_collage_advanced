@@ -182,8 +182,8 @@
 		94EAB50A15DDEE56000B5D4C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				HEADER_SEARCH_PATHS = "/usr/local/include/**";
-				LIBRARY_SEARCH_PATHS = "/usr/local/lib/**";
+				HEADER_SEARCH_PATHS = /usr/local/include;
+				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				OTHER_LDFLAGS = (
 					"-lopencv_highgui",
 					"-lopencv_core",
@@ -197,8 +197,8 @@
 		94EAB50B15DDEE56000B5D4C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				HEADER_SEARCH_PATHS = "/usr/local/include/**";
-				LIBRARY_SEARCH_PATHS = "/usr/local/lib/**";
+				HEADER_SEARCH_PATHS = /usr/local/include;
+				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				OTHER_LDFLAGS = (
 					"-lopencv_highgui",
 					"-lopencv_core",
