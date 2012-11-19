@@ -71,8 +71,8 @@ bool CollageAdvanced::CreateCollage(const float expect_alpha) {
 // this function returns -1.
 int CollageAdvanced::CreateCollage(const float expect_alpha,
                                    const float thresh,
-                                   int total_tree_generation,
-                                   int total_adjust_iteration) {
+                                   int& total_tree_generation,
+                                   int& total_adjust_iteration) {
   assert(thresh > 1);
   assert(expect_alpha > 0);
   tree_root_->alpha_expect_ = expect_alpha;
@@ -356,7 +356,7 @@ void CollageAdvanced::GenerateTree(float expect_alpha) {
   }
   
   // Generate a new tree by using divide-and-conquer.
-  tree_root_ = GuidedTree(tree_root_, 'N', expect_alpha,
+  tree_root_ = GuidedTree(NULL, 'N', expect_alpha,
                           image_num_, local_alpha, expect_alpha);
   // After guided tree generation, all the images have been dispatched to leaves.
   assert(local_alpha.size() == 0);
@@ -461,7 +461,7 @@ TreeNode* CollageAdvanced::GuidedTree(TreeNode* parent,
 // which means that we have dispatched one image with a tree leaf.
 bool CollageAdvanced::FindOneImage(float expect_alpha,
                                    std::vector<AlphaUnit>& alpha_array,
-                                   float find_img_alpha,
+                                   float& find_img_alpha,
                                    std::string & find_img_path) {
   if (alpha_array.size() == 0) return false;
   // Since alpha_array has already been sorted, we use binary search to find
@@ -503,10 +503,10 @@ bool CollageAdvanced::FindOneImage(float expect_alpha,
 // removed, which means we have dispatched two images.
 bool CollageAdvanced::FindTwoImages(float expect_alpha,
                                     std::vector<AlphaUnit>& alpha_array,
-                                    char find_split_type,
-                                    float find_img_alpha_1,
+                                    char& find_split_type,
+                                    float& find_img_alpha_1,
                                     std::string& find_img_path_1,
-                                    float find_img_alpha_2,
+                                    float& find_img_alpha_2,
                                     std::string& find_img_path_2) {
   if ((alpha_array.size() == 0) || (alpha_array.size() == 1)) return false;
   // There are two situations:

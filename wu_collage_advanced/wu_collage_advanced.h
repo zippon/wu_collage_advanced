@@ -103,8 +103,8 @@ public:
   // If max iteration number is reached and we cannot find a good result aspect ratio,
   // this function returns -1.
   int CreateCollage(const float expect_alpha, const float thresh,
-                    int total_tree_generation,
-                    int total_adjust_iteration);
+                    int& total_tree_generation,
+                    int& total_adjust_iteration);
   
   // Output collage into a single image.
   cv::Mat OutputCollageImage() const;
@@ -151,7 +151,7 @@ private:
   // which means that we have dispatched one image with a tree leaf.
   bool FindOneImage(float expect_alpha,
                     std::vector<AlphaUnit>& alpha_array,
-                    float find_img_alpha,
+                    float& find_img_alpha,
                     std::string& find_img_path);
   // Find the best fit aspect ratio (two images) in the given array.
   // find_split_type returns 'h' or 'v'.
@@ -160,10 +160,10 @@ private:
   // removed, which means we have dispatched two images.
   bool FindTwoImages(float expect_alpha,
                      std::vector<AlphaUnit>& alpha_array,
-                     char find_split_type,
-                     float find_img_alpha_1,
+                     char& find_split_type,
+                     float& find_img_alpha_1,
                      std::string& find_img_path_1,
-                     float find_img_alpha_2,
+                     float& find_img_alpha_2,
                      std::string& find_img_path_2);
   // Top-down adjust aspect ratio for the final collage.
   bool AdjustAlpha(TreeNode* node, float thresh);
