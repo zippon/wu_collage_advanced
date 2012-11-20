@@ -20,6 +20,8 @@ CollageAdvanced::CollageAdvanced(std::vector<std::string> input_image_list,
   for (int i = 0; i < input_image_list.size(); ++i) {
     std::string img_path = input_image_list[i];
     cv::Mat img = cv::imread(img_path.c_str());
+    if (img.empty())
+      continue;
     AlphaUnit new_unit;
     new_unit.image_ind_ = i;
     new_unit.alpha_ = static_cast<float>(img.cols) / img.rows;
@@ -235,6 +237,8 @@ bool CollageAdvanced::ReadImageList(std::string input_image_list) {
     std::getline(input_list, img_path);
     // std::cout << img_path <<std::endl;
     cv::Mat img = cv::imread(img_path.c_str());
+    if (img.empty())
+      continue;
     AlphaUnit new_unit;
     new_unit.image_ind_ = index;
     new_unit.alpha_ = static_cast<float>(img.cols) / img.rows;
