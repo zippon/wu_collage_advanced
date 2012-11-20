@@ -1,6 +1,6 @@
 # Short Description
 
-![collage](http://farm9.staticflickr.com/8070/8201366305_206fe790dc_s.jpg)
+![collage](https://github.com/zippon/wu_collage_advanced/wiki/images/collage.png)
 ##Overview
 The files in this folder simply allows you to create an image collage with a set of input images. The collage algorithm features in the following points:
 
