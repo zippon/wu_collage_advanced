@@ -1,6 +1,6 @@
 # Short Description
 
-![collage](http://farm9.staticflickr.com/8348/8201228429_2869581c82_b.jpg)
+![collage](http://farm9.staticflickr.com/8070/8201366305_206fe790dc_s.jpg)
 ##Overview
 The files in this folder simply allows you to create an image collage with a set of input images. The collage algorithm features in the following points:
 
