@@ -15,6 +15,15 @@ To build the binary, you need to pre-install [OpenCV](http://opencv.org/) on you
 
     gcc -o collage_main main.cpp wu_collage_advanced.cpp -I path/to/your/opencv/include -L path/to/your/opencv/lib -lopencv_highgui -lopencv_core -lopencv_imgproc
 
+##Build by [CMake](http://www.cmake.org/)
+Git Clone the files on your local disk. Under folder 'wu_collage_advanced':
+    mkdir build
+    cd build
+    cmake ..
+    make
+Then, the binary is built at ./build/bin/collage. You can test the collage:
+    cd ..
+    sh run_test.sh
 ##Test
 
 The binary requires a list which contains a set of images. A typical example for the input images and lists can be found in the ‘*test*’ folder. To run the binary:
