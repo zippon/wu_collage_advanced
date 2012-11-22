@@ -17,11 +17,13 @@ To build the binary, you need to pre-install [OpenCV](http://opencv.org/) on you
 
 ##Build by [CMake](http://www.cmake.org/)
 Git Clone the files on your local disk. Under folder 'wu_collage_advanced':
+
     mkdir build
     cd build
     cmake ..
     make
 Then, the binary is built at ./build/bin/collage. You can test the collage:
+
     cd ..
     sh run_test.sh
 ##Test
