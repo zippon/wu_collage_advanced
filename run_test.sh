@@ -1,1 +1,1 @@
-Build/bin/collage test/lists/maldives60.txt
+build/bin/collage test/lists/maldives60.txt
